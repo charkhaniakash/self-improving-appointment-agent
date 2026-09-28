@@ -7,7 +7,79 @@ detected failures, applies them to the agent's policy layer, re-runs the
 same scenarios, and demonstrates a before/after score increase without
 regressing previously passing scenarios.
 
-## What was built
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js 18.17+** (required for Next.js 14)
+- **npm** (comes with Node.js)
+- **Gemini API Key** (optional - app works with Mock LLM if not provided)
+
+### Step 1: Get a Gemini API Key (Optional but Recommended)
+
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Click **"Get API Key"** or **"Create API Key"**
+3. Copy the API key (starts with `AIza...`)
+
+> **Note:** The app will work without an API key, but the chat will use a simple Mock LLM instead of Gemini. The evaluation system always uses the Mock LLM for reproducibility.
+
+### Step 2: Set Up Environment Variables
+
+**Create a `.env` file in the project root:**
+
+```bash
+cp .env.example .env
+```
+
+**Edit `.env` and add your Gemini API key:**
+
+```bash
+# Required for interactive chat (Gemini LLM)
+GEMINI_API_KEY=your_actual_api_key_here
+
+# Optional - defaults shown below
+GEMINI_MODEL=gemini-2.0-flash-exp
+BACKEND_PORT=4000
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+```
+
+> ⚠️ **Important:** Replace `your_actual_api_key_here` with your real API key from Google AI Studio.
+
+### Step 3: Install Dependencies
+
+```bash
+npm install
+```
+
+This installs all dependencies for both backend and frontend workspaces.
+
+### Step 4: Run the Application
+
+```bash
+npm run dev
+```
+
+This starts:
+- **Backend** on `http://localhost:4000`
+- **Frontend** on `http://localhost:3000`
+
+Open `http://localhost:3000` in your browser to use the app.
+
+### Step 5: Run the Self-Improvement Evaluation (Optional)
+
+To see the self-improvement loop in action via CLI:
+
+```bash
+npm run eval
+```
+
+This demonstrates the core feature: automatic testing, improvement generation, and before/after scoring.
+
+---
+
+## 📦 What Was Built
 
 - **Conversational agent** with a proper tool-calling loop (Node + TS).
 - **Four scoped tools** with `zod`-validated inputs: `check_availability`,
@@ -28,7 +100,9 @@ regressing previously passing scenarios.
   loop from one page.
 - **Vitest tests** for tool validation, evaluator, and end-to-end loop.
 
-## Architecture
+---
+
+## 🏗️ Architecture
 
 ```
 frontend/  Next.js chat + eval UI
@@ -69,70 +143,86 @@ EvaluationLoop.runFullLoop(SCENARIOS)
   -> RegressionReport
 ```
 
-## Install
+## 📋 Available Commands
 
-Requires Node 18.17+ (Next.js 14 requirement).
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start both backend and frontend in development mode |
+| `npm run eval` | Run the self-improvement evaluation loop (CLI) |
+| `npm test` | Run all unit tests with Vitest |
+| `npm run build` | Build both backend and frontend for production |
 
-```bash
-npm install
-```
+## 🧪 Testing the App
 
-Optional environment variables — copy `.env.example` and set as needed:
-
-```bash
-cp .env.example .env
-```
-
-`GEMINI_API_KEY` powers the **interactive chat** UI. The **evaluation harness**
-always uses the deterministic `MockProvider` so before/after runs are
-reproducible; see DESIGN.md for the rationale.
-
-## Run the app
-
-```bash
-npm run dev
-```
-
-Starts backend on `http://localhost:4000` and frontend on
-`http://localhost:3000`.
-
-## Run the evaluation + self-improvement loop
-
-```bash
-npm run eval
-```
-
-Prints scenario-level PASS/FAIL for the BEFORE and AFTER runs, the list of
-generated improvements, the score delta, and the regression check result.
-
-## Run the tests
+### Run All Tests
 
 ```bash
 npm test
 ```
 
-## Using the agent
+This runs the Vitest test suites:
+- **tools.test.ts** - Tool validation, booking conflicts, cancellation, rescheduling
+- **guardrails.test.ts** - Safety checks (no hallucinated bookings, forbidden tools)
+- **evaluation.test.ts** - End-to-end self-improvement loop validation
 
-Open `http://localhost:3000`.
+## 💬 Using the Agent
 
-- **Left panel — Chat**: talk to the agent. Try:
-  - "I'd like to see Dr. Sharma tomorrow at 10am. My name is Aisha Rao."
-  - "Yes, please book it."
-  - "Please cancel my appointment."
-  Each assistant turn shows the tool calls it made, whether each one
-  succeeded, and the raw input/result.
+Open `http://localhost:3000` in your browser.
 
-- **Right panel — Evaluation & self-improvement**:
-  - **Run evaluation** — runs the 10 scenarios once against the currently
-    loaded policy and shows scenario-level results.
-  - **Run self-improvement loop** — runs the full BEFORE → improve → AFTER
-    cycle and shows the delta, the regression check, and every generated
-    improvement (with its id, the failure it addresses, and the exact rule
-    text applied to the policy).
-  - **Reset policy** — clears applied improvements so you can re-demo the
-    loop from scratch.
+### Left Panel - Chat Interface
 
-## Scoring
+Talk to the appointment booking agent. Try these examples:
+
+**Example 1: Book an Appointment**
+```
+You: I'd like to see Dr. Sharma tomorrow at 10am. My name is Aisha Rao.
+Bot: Dr. Sharma has an opening tomorrow, September 29th, at 10:00 AM. 
+     Would you like to book this appointment?
+You: Yes
+Bot: Your appointment with Dr. Sharma on September 29th at 10:00 AM has been booked.
+```
+
+**Example 2: Cancel an Appointment**
+```
+You: Please cancel my appointment.
+Bot: Your appointment has been cancelled.
+```
+
+**Example 3: Reschedule**
+```
+You: I need to reschedule to September 30th at 11am.
+Bot: Your appointment has been rescheduled to September 30th at 11:00 AM.
+```
+
+Each assistant turn shows:
+- The tool calls it made (e.g., `check_availability`, `book_appointment`)
+- Whether each tool call succeeded (`ok` or `error`)
+- The raw input/output data from each tool
+
+### Right Panel - Evaluation & Self-Improvement
+
+This panel is for **demonstrating** the self-improvement feature (not for regular users).
+
+**Three Buttons:**
+
+1. **"Run evaluation"** - Tests the agent with 10 scenarios and shows current score
+2. **"Run self-improvement loop"** - The main demo feature:
+   - Runs 10 test scenarios (BEFORE score)
+   - Analyzes failures and generates improvement rules
+   - Applies the rules to the agent's policy
+   - Runs the same 10 scenarios again (AFTER score)
+   - Shows improvement delta and regression check
+3. **"Reset policy"** - Clears all improvements to restart the demo
+
+**What You'll See:**
+- **Before/After scores** with visual progress bars
+- **Generated improvements** with rule IDs and descriptions
+- **Scenario results** showing which tests passed/failed
+- **Regression status** (ensures no previously passing tests broke)
+
+---
+
+## 📈 Scoring
 
 Each scenario declares a set of criteria (required tool ordering, forbidden
 tools, final application state, no-hallucinated-booking, must-contain /
@@ -141,7 +231,9 @@ criterion passes. Overall score is `passed / total`. The critical
 `noHallucinatedBooking` check is deterministic and inspects the tool trace
 directly — not the transcript alone.
 
-## How self-improvement works
+---
+
+## ⚙️ How Self-Improvement Works
 
 1. `ScenarioRunner` runs each scenario through the agent, capturing the
    transcript **and** the structured tool trace.
@@ -159,7 +251,37 @@ directly — not the transcript alone.
 Improvements are **structured data**, not code rewrites. That keeps them
 auditable, disable-able (`enabled: false`), and safe to auto-apply.
 
-## Example before/after result
+## 🔧 Troubleshooting
+
+### Issue: "Cannot find module" errors
+**Solution:** Make sure you ran `npm install` from the project root.
+
+### Issue: Port 4000 already in use
+**Solution:** Either stop the process using port 4000, or change the port in `.env`:
+```bash
+BACKEND_PORT=4001
+```
+
+### Issue: Gemini API errors
+**Solution:**
+- Verify your API key is correct in `.env`
+- Check you have API quota remaining at [Google AI Studio](https://aistudio.google.com/)
+- The app will automatically fall back to Mock LLM if Gemini fails
+
+### Issue: Frontend doesn't connect to backend
+**Solution:** Make sure both are running:
+```bash
+# Check backend is running
+curl http://localhost:4000/health
+# Should return: {"ok":true}
+
+# If not, restart:
+npm run dev
+```
+
+---
+
+## 📊 Example Before/After Result
 
 Actual output of `npm run eval` on this repo:
 
@@ -178,7 +300,9 @@ Improvements generated (all four applied):
 - `IMP-003 MUST_ASK_FOR_MISSING_INFO` — ask for name/doctor/date/time, never guess.
 - `IMP-004 MUST_CONFIRM_BEFORE_BOOKING` — summarize + ask patient to confirm.
 
-## Testing instructions
+---
+
+## 🧪 Testing Instructions
 
 `npm test` runs the Vitest suites in `backend/tests`:
 
@@ -190,7 +314,9 @@ Improvements generated (all four applied):
 - `evaluation.test.ts` — end-to-end loop: score improves, no regressions,
   every generated improvement is well-formed.
 
-## Design decisions
+---
+
+## 🎯 Design Decisions
 
 - **Rule-based improvement generator (not a free-form LLM)**. Mapping
   failure signatures to a fixed catalogue of policy entries makes the loop
@@ -211,7 +337,9 @@ Improvements generated (all four applied):
   no-op; the policy layer builds the system prompt from
   `baseRules + enabled improvements` every turn.
 
-## Limitations
+---
+
+## ⚠️ Limitations
 
 - Appointment data is in-memory; server restart clears it.
 - Improvements persist only in memory (a `PolicyRepository` implementation
